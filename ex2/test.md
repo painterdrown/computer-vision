@@ -10,30 +10,30 @@ PS：下面 5 组对比中，前者为原代码处理效果，后者为改写代
 
 1. Gray Scale 对比
 
-![](img/old-gray.png)
+![](img/vs/old-gray.png)
 
-![](img/new-gray.png)
+![](img/vs/new-gray.png)
 
 2. Gaussian Filter 对比
 
-![](img/old-gaussian.png)
+![](img/vs/old-gaussian.png)
 
-![](img/new-gaussian.png)
+![](img/vs/new-gaussian.png)
 
 3. Sobel Filter 对比
 
-![](img/old-sobel.png)
+![](img/vs/old-sobel.png)
 
-![](img/new-sobel.png)
+![](img/vs/new-sobel.png)
 
 4. Non-maximum Suppression 对比
 
-![](img/old-non-maximum.png)
+![](img/vs/old-non-maximum.png)
 
-![](img/new-non-maximum.png)
+![](img/vs/new-non-maximum.png)
 
 5. Hysteresis Threshold 对比
 
-![](img/old-threshold.png)
+![](img/vs/old-threshold.png)
 
-![](img/new-threshold.png)
+![](img/vs/new-threshold.png)
