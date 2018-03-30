@@ -30,13 +30,17 @@ private:
     Img non_maximum_suppressed;  // non-maximum suppressed image
     Img hysteresis_threshold;    // hysteresis threshold image
 public:
-    Canny(const char *);                    // constructor
-    Filter createFilter(int, int, double);  // creates a gaussian filter
-    void grayScale();                       // do gray scale
-    void gaussianFilter();                  // Gaussian filtering
-    void sobelFilter();                     // Sobel filtering
-    void nonMaximumSuppression();           // non-maximum suppression
-    void hysteresisThreshold(int, int);     // hysteresis threshold
+    Canny(const char *);                            // constructor
+    Filter createGaussianFilter(int, int, double);  // creates a gaussian filter
+    Filter createSobelFilterX();
+    Filter createSobelFilterY();
+    Filter createPrewittFilterX();
+    Filter createPrewittFilterY();
+    void grayScale();                               // do gray scale
+    void gaussianFilter();                          // Gaussian filtering
+    void gradientFilter();                          // gradient filtering
+    void nonMaximumSuppression();                   // non-maximum suppression
+    void hysteresisThreshold(int, int);             // hysteresis threshold
 };
 
 #endif

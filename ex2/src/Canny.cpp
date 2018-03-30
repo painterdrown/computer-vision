@@ -20,18 +20,18 @@ Canny::Canny(const char *filepath) {
     gaussianFilter();
     gaussian_filtered.display("Gaussian Filtered");
     
-    sobelFilter();
+    gradientFilter();
     // angled.display();
     sobel_filtered.display("Sobel Filtered");
     
     nonMaximumSuppression();
     non_maximum_suppressed.display("Non-maximum Suppressed");
     
-    hysteresisThreshold(20, 40);
+    hysteresisThreshold(20, 60);
     hysteresis_threshold.display("Hysteresis Threshold");
 }
 
-Filter Canny::createFilter(int row, int column, double sigma) {
+Filter Canny::createGaussianFilter(int row, int column, double sigma) {
     Filter filter;
     
     // initialize
@@ -77,7 +77,7 @@ void Canny::grayScale() {
 }
 
 void Canny::gaussianFilter() {
-    Filter filter = createFilter(3, 3, 1);
+    Filter filter = createGaussianFilter(3, 3, 1);
     int size = (int)filter.size() / 2;
     gaussian_filtered = Img(gray_scaled.width() - 2*size, gray_scaled.height() - 2*size, 1);
     for (int i = size; i < gray_scaled.height() - size; ++i) {
@@ -93,24 +93,61 @@ void Canny::gaussianFilter() {
     }
 }
 
-void Canny::sobelFilter() {
+Filter Canny::createSobelFilterX() {
     // Sobel x filter
-    double x1[] = {-1.0, 0, 1.0};
-    double x2[] = {-2.0, 0, 2.0};
-    double x3[] = {-1.0, 0, 1.0};
+    double sobel_x1[] = {-1.0, 0, 1.0};
+    double sobel_x2[] = {-2.0, 0, 2.0};
+    double sobel_x3[] = {-1.0, 0, 1.0};
     Filter x_filter(3);
-    x_filter[0].assign(x1, x1 + 3);
-    x_filter[1].assign(x2, x2 + 3);
-    x_filter[2].assign(x3, x3 + 3);
-    
+    x_filter[0].assign(sobel_x1, sobel_x1 + 3);
+    x_filter[1].assign(sobel_x2, sobel_x2 + 3);
+    x_filter[2].assign(sobel_x3, sobel_x3 + 3);
+    return x_filter;
+}
+
+Filter Canny::createSobelFilterY() {
     // Sobel y filter
-    double y1[] = {1.0, 2.0, 1.0};
-    double y2[] = {0, 0, 0};
-    double y3[] = {-1.0, -2.0, -1.0};
+    double sobel_y1[] = {1.0, 2.0, 1.0};
+    double sobel_y2[] = {0, 0, 0};
+    double sobel_y3[] = {-1.0, -2.0, -1.0};
     Filter y_filter(3);
-    y_filter[0].assign(y1, y1 + 3);
-    y_filter[1].assign(y2, y2 + 3);
-    y_filter[2].assign(y3, y3 + 3);
+    y_filter[0].assign(sobel_y1, sobel_y1 + 3);
+    y_filter[1].assign(sobel_y2, sobel_y2 + 3);
+    y_filter[2].assign(sobel_y3, sobel_y3 + 3);
+    return y_filter;
+}
+
+Filter Canny::createPrewittFilterX() {
+    double prewitt_x1[] = {-1.0, 0, 1.0};
+    double prewitt_x2[] = {-1.0, 0, 1.0};
+    double prewitt_x3[] = {-1.0, 0, 1.0};
+    Filter x_filter(3);
+    x_filter[0].assign(prewitt_x1, prewitt_x1 + 3);
+    x_filter[1].assign(prewitt_x2, prewitt_x2 + 3);
+    x_filter[2].assign(prewitt_x3, prewitt_x3 + 3);
+    return x_filter;
+}
+
+Filter Canny::createPrewittFilterY() {
+    double prewitt_y1[] = {1.0, 1.0, 1.0};
+    double prewitt_y2[] = {0, 0, 0};
+    double prewitt_y3[] = {-1.0, -1.0, -1.0};
+    Filter y_filter(3);
+    y_filter[0].assign(prewitt_y1, prewitt_y1 + 3);
+    y_filter[1].assign(prewitt_y2, prewitt_y2 + 3);
+    y_filter[2].assign(prewitt_y3, prewitt_y3 + 3);
+    return y_filter;
+}
+
+void Canny::gradientFilter() {
+
+    // Sobel filter
+    Filter x_filter = createSobelFilterX();
+    Filter y_filter = createSobelFilterY();
+
+    // Prewitt filter
+    // Filter x_filter = createPrewittFilterX();
+    // Filter y_filter = createPrewittFilterY();
     
     int size = (int)x_filter.size()/2;  // limit size
     const int width = gaussian_filtered.width() - 2*size;

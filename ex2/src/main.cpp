@@ -11,7 +11,7 @@
 #include "Canny.hpp"
 
 int main(int argc, const char * argv[]) {
-    Canny bigben("img/bigben.jpg");
-    // Canny lena("img/lena.jpg");
+    // Canny bigben("img/bigben.jpg");
+    Canny lena("img/lena.jpg");
     return 0;
 }

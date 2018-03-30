@@ -1,5 +1,18 @@
 # Ex2：用 CImg 重写、封装给定的 Canny 代码，并测试
 
+## Usage
+
+```sh
+# 在 ex2 目录下
+
+# 编译
+g++ -o bin/main src/main.cpp src/Canny.cpp -O2 -lm -lpthread -I/usr/X11R6/include -L/usr/X11R6/lib -lm -lpthread -lX11
+# 运行
+bin/main
+```
+
+## 作业要求
+
 1. 附件有三个 Canny 相关的 Code 以及测试数据若干(测试数据自己转化成 BMP 图像)；
 
 由于原生的 CImg 库不支持 .jpg 格式的图片，需要转成 .bmp 格式。可以通过安装 [ImageMagick](http://www.imagemagick.org) 解决这一问题。
