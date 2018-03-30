@@ -10,8 +10,7 @@ PS：下面 5 组对比中，前者为原代码处理效果，后者为改写代
 
 ### 1. Gray Scale 对比
 
-<img width="388" height="540" src="img/vs/old-gray.png"/>
-<img width="388" height="540" src="img/vs/new-gray.png"/>
+<img width="388" height="540" src="img/vs/old-gray.png"/><img width="388" height="540" src="img/vs/new-gray.png"/>
 
 ![](img/vs/old-gray.png)
 
