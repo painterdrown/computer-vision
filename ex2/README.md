@@ -34,4 +34,4 @@ bin/main
   + 微分算子（代码里采用的是 Sobel 算子）
   + Hysteresis Threshold 中的上界 high 和下界 low
 
-这些参数对结果的印象参考 [test/test.pdf](https://github.com/painterdrown/computer-vision/blob/master/ex2/test/test.md)。
+这些参数对结果的印象参考 [test.pdf](https://github.com/painterdrown/computer-vision/blob/master/ex2/test.md)。
