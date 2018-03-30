@@ -61,6 +61,4 @@ Canny 算法采用双阈值法从候选边缘点中检测和连接出最终的�
 
 算法中的 low 和 high 分别为 20 和 40，下面是修改后的对比，依次为 (10, 40), (20, 40) 和 (20, 60)。
 
-<img width="400" height="400" src="img/parameters/threshold-10-40.png"/><br/>
-<img width="400" height="400" src="img/parameters/threshold-20-40.png"/><br/>
-<img width="400" height="400" src="img/parameters/threshold-20-60.png"/>
+<img width="400" height="400" src="img/parameters/threshold-10-40.png"/> <img width="400" height="400" src="img/parameters/threshold-20-40.png"/> <img width="400" height="400" src="img/parameters/threshold-20-60.png"/>
