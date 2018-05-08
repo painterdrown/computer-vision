@@ -1,19 +1,23 @@
 /* 编译运行
-  编译：g++ -o bin/task1 src/task1.cpp -O2 -lm -lpthread -I/usr/X11R6/include -L/usr/X11R6/lib -lm -lpthread -lX11
+  编译：g++ -o bin/task1 src/task1.cpp -O2 -lm -lpthread -I /usr/X11R6/include -L /usr/X11R6/lib -lm -lpthread -lX11
   运行：bin/task1
-  结果：img/result1/#_edge.jpg & img/result1/#_result.jpg
+  结果：img/result1/#.jpg
 */
 
-#include "CImg.h"
 #include <vector>
 #include <iostream>
+#include "CImg.h"
+#undef Success
+#include "Eigen/Dense"
+#include "Eigen/LU"
 
 using namespace std;
 using namespace cimg_library;
+using namespace Eigen;
 
 #define FILE_PATH    "img/dataset1/6.jpg"
-#define EDGE_PATH    "img/result1/6_edge.jpg"
-#define RESULT_PATH  "img/result1/6_result.jpg"
+// #define EDGE_PATH    "img/result1/3_edge.jpg"
+#define RESULT_PATH  "img/result1/6.jpg"
 
 #define GRADLIMIT   15
 #define THRESHOLD   800
@@ -56,12 +60,42 @@ int crossY(int angle, int distance, int y) {
   return ((double)(y - b) / m);
 }
 
+void projectiveTransform(const CImg<double> &original_img, CImg<double> &result_img, const MatrixXd &PT) {
+  const double a = PT(0, 0),
+               b = PT(0, 1),
+               c = PT(0, 2),
+               d = PT(1, 0),
+               e = PT(1, 1),
+               f = PT(1, 2),
+               g = PT(2, 0),
+               h = PT(2, 1);
+  const double p1 = h * f - e,
+               q1 = b - h * c,
+               r1 = e * c - b * f,
+               p2 = d - g * f,
+               q2 = g * c - a,
+               r2 = a * f - d * c,
+               p3 = g * e - d * h,
+               q3 = a * h - g * b,
+               r3 = d * b - a * e;
+  cimg_forXY(result_img, u, v) {
+    double down = p3 * u + q3 * v + r3;
+    if (down == 0.0) continue;
+    double x_up = p1 * u + q1 * v + r1;
+    double y_up = p2 * u + q2 * v + r2;
+    int x = x_up / down;
+    int y = y_up / down;
+    result_img(u, v, 0, 0) = original_img(x, y, 0, 0);
+    result_img(u, v, 0, 1) = original_img(x, y, 0, 1);
+    result_img(u, v, 0, 2) = original_img(x, y, 0, 2);
+  }
+}
+
 int main() {
   CImg<double> orgn_img(FILE_PATH);
   CImg<double> gray_img(orgn_img);
   CImg<double> grad_img(orgn_img.width(), orgn_img.height(), 1, 1, 0);
-  CImg<double> rslt_img(orgn_img);
-  // CImg<double> empt_img(orgn_img.width(), orgn_img.height());
+  CImg<double> rslt_img;
 
   // Gray scale;  
   cimg_forXY(gray_img, x, y) {
@@ -131,38 +165,9 @@ int main() {
     }
   }
 
-  // sort(peaks.begin(), peaks.end(), [](const Dot &d1, const Dot &d2) {
-  //   return d1.value > d2.value;
-  // });
-
-  Dot* top4_peaks[4];
-  if (peaks.size() > 4) {
-    top4_peaks[3] = peaks[0];
-    for (int i = 1; i < peaks.size(); ++i) {
-      if (peaks[i]->value > top4_peaks[3]->value) {
-        top4_peaks[3] = peaks[i];
-      }
-      if (peaks[i]->value > top4_peaks[2]->value) {
-        Dot *temp = top4_peaks[3];
-        top4_peaks[3] = top4_peaks[2];
-        top4_peaks[2] = temp;
-      }
-      if (peaks[i]->value > top4_peaks[1]->value) {
-        Dot *temp = top4_peaks[2];
-        top4_peaks[2] = top4_peaks[1];
-        top4_peaks[1] = temp;
-      }
-      if (peaks[i]->value > top4_peaks[0]->value) {
-        Dot *temp = top4_peaks[1];
-        top4_peaks[1] = top4_peaks[0];
-        top4_peaks[0] = temp;
-      }
-    }
-  }
-
-  // 取前 4 的直线
+  // 排序后取前四的直线
   const int size = peaks.size();
-  for (int i = 0; i < size; ++i) {
+  for (int i = 0; i < 4; ++i) {
     int pos = i;
     for (int j = i+1; j < size; ++j) {
       if (peaks[j]->value > peaks[pos]->value) pos = j;
@@ -174,19 +179,19 @@ int main() {
   peaks.resize(4);
 
   // Transform polar coordinates to rectangular coordinates
-  cout << "lines: " << endl;
+  // cout << "lines: " << endl;
   vector<Line*> lines;
   for (int i = 0; i < peaks.size(); ++i) {
-    cout << "(" << peaks[i]->x << "," << peaks[i]->y << ") " << peaks[i]->value << endl;
+    // cout << "(" << peaks[i]->x << "," << peaks[i]->y << ") " << peaks[i]->value << endl;
     double angle = (double)peaks[i]->x*PI / 180.0;
     double m = -cos(angle) / sin(angle);
     double b = (double)peaks[i]->y / sin(angle);
     lines.push_back(new Line(m, b));
-    cout << "y = " << m << "x + " << b << endl;
+    // cout << "y = " << m << "x + " << b << endl;
   }
 
   // Calculate line intersections
-  std::cout << std::endl << "intersections: " << std::endl;
+  // std::cout << std::endl << "intersections: " << std::endl;
   std::vector<Dot*> intersections;
   for (int i = 0; i < lines.size(); ++i) {
     for (int j = i + 1; j < lines.size(); ++j) {
@@ -196,50 +201,107 @@ int main() {
       double b1 = lines[j]->b;
       double x = (b1 - b0) / (m0 - m1);
       double y = (m0*b1 - m1*b0) / (m0 - m1);
-      if (x >= 0 && x < rslt_img.width() && y >= 0 && y < rslt_img.height()) {
+      if (x >= 0 && x < orgn_img.width() && y >= 0 && y < orgn_img.height()) {
         intersections.push_back(new Dot(x, y, 0));
-        std::cout << "(" << x << ", " << y << ")" << std::endl;
+        // std::cout << "(" << x << ", " << y << ")" << std::endl;
       }
     }
   }
 
   // Draw lines
-  for (int i = 0; i < lines.size(); ++i) {
-    const int ymin = 0;
-    const int ymax = rslt_img.height() - 1;
-    const int x0 = (double)(ymin - lines[i]->b) / lines[i]->m;
-    const int x1 = (double)(ymax - lines[i]->b) / lines[i]->m;
-    const int xmin = 0;
-    const int xmax = rslt_img.width() - 1;
-    const int y0 = xmin*lines[i]->m + lines[i]->b;
-    const int y1 = xmax*lines[i]->m + lines[i]->b;
-    const double color[] = { 255, 0, 0 };
-    if (abs(lines[i]->m) > SLOPE_FLAG) {
-      rslt_img.draw_line(x0, ymin, x1, ymax, color);
-      // empt_img.draw_line(x0, ymin, x1, ymax, color);
-    } else {
-      rslt_img.draw_line(xmin, y0, xmax, y1, color);
-      // empt_img.draw_line(x0, ymin, x1, ymax, color);
-    }
-  }
+  // for (int i = 0; i < lines.size(); ++i) {
+  //   const int ymin = 0;
+  //   const int ymax = rslt_img.height() - 1;
+  //   const int x0 = (double)(ymin - lines[i]->b) / lines[i]->m;
+  //   const int x1 = (double)(ymax - lines[i]->b) / lines[i]->m;
+  //   const int xmin = 0;
+  //   const int xmax = rslt_img.width() - 1;
+  //   const int y0 = xmin*lines[i]->m + lines[i]->b;
+  //   const int y1 = xmax*lines[i]->m + lines[i]->b;
+  //   const double color[] = { 255, 0, 0 };
+  //   if (abs(lines[i]->m) > SLOPE_FLAG) {
+  //     rslt_img.draw_line(x0, ymin, x1, ymax, color);
+  //   } else {
+  //     rslt_img.draw_line(xmin, y0, xmax, y1, color);
+  //   }
+  // }
 
   // Draw intersections  
-  for (int i = 0; i < intersections.size(); ++i) {
-    const double color[] = { 255, 0, 0 };
-    rslt_img.draw_circle(intersections[i]->x, intersections[i]->y, 22, color);
-    // empt_img.draw_circle(intersections[i]->x, intersections[i]->y, 22, color);
-  }
+  // for (int i = 0; i < intersections.size(); ++i) {
+  //   const double color[] = { 255, 0, 0 };
+  //   rslt_img.draw_circle(intersections[i]->x, intersections[i]->y, 22, color);
+  // }
 
-  grad_img.save(EDGE_PATH);
-  rslt_img.save(RESULT_PATH);
+  // grad_img.save(EDGE_PATH);
+  // rslt_img.save(RESULT_PATH);
 
   // Display images
-  // orgn_img.display("Original Image");
-  // gray_img.display("Gray Blur Image");
-  grad_img.display("Gradient Image");
-  hough_img.display("Hough Image");
-  rslt_img.display("Result Image");
-  // empt_img.display();
+  // grad_img.display("Gradient Image");
+  // hough_img.display("Hough Image");
+  // rslt_img.display("Result Image");
+
+  Dot *dot0, *dot1, *dot2, *dot3;
+  double dis[4][4];
+  int nearpos[4];
+  const int img_width = orgn_img._width;
+  const int img_height = orgn_img._height;
+  for (int i = 0; i < 4; ++i) {
+    double x = intersections[i]->x;
+    double y = intersections[i]->y;
+    dis[i][0] = pow(x - 0, 2) + pow(y - 0, 2);
+    dis[i][1] = pow(img_width - x, 2) + pow(y - 0, 2);
+    dis[i][2] = pow(x - 0, 2) + pow(img_height - y, 2);
+    dis[i][3] = pow(img_width - x, 2) + pow(img_height - y, 2);
+  }
+  for (int i = 0; i < 4; ++i) {
+    nearpos[i] = 0;
+    for (int j = 1; j < 4; ++j) {
+      if (dis[j][i] < dis[nearpos[i]][i]) nearpos[i] = j;
+    }
+  }
+  dot0 = intersections[nearpos[0]];
+  dot1 = intersections[nearpos[1]];
+  dot2 = intersections[nearpos[2]];
+  dot3 = intersections[nearpos[3]];
+  if (pow(dot0->x - dot1->x, 2) + pow(dot0->y - dot1->y, 2) > pow(dot0->x - dot2->x, 2) + pow(dot0->y - dot2->y, 2)) {
+    Dot * temp = dot0;
+    dot0 = dot2;
+    dot2 = dot3;
+    dot3 = dot1;
+    dot1 = temp;
+  }
+  int x0 = dot0->x;
+  int y0 = dot0->y;
+  int x1 = dot1->x;
+  int y1 = dot1->y;
+  int x2 = dot2->x;
+  int y2 = dot2->y;
+  int x3 = dot3->x;
+  int y3 = dot3->y;
+  int m = (sqrt(pow(x1 - x0, 2) + pow(y1 - y0, 2)) + sqrt(pow(x3 - x2, 2) + pow(y3 - y2, 2))) / 2;
+  int n = m * 297 / 210;
+  
+  // cout << x0 << " " << y0 << " " << x1 << " " << y1 << " " << x2 << " " << y2 << " " << x3 << " " << y3 << " " << m << " " << n << " " << endl;
+
+  MatrixXd A(8,8), PT(3, 3);
+  VectorXd b(8), x(8);
+  A << x0, y0, 1, 0, 0, 0, 0, 0,
+       x1, y1, 1, 0, 0, 0, -m*x1, -m*y1,
+       x2, y2, 1, 0, 0, 0, 0, 0,
+       x3, y3, 1, 0, 0, 0, -m*x3, -m*y3,
+       0, 0, 0, x0, y0, 1, 0, 0,
+       0, 0, 0, x1, y1, 1, 0, 0,
+       0, 0, 0, x2, y2, 1, -n*x2, -n*y2,
+       0, 0, 0, x3, y3, 1, -n*x3, -n*y3;
+  b << 0, m, 0, m, 0, 0, n, n;
+  x = A.lu().solve(b);
+  PT << x(0), x(1), x(2), x(3), x(4), x(5), x(6), x(7), 1;
+  // cout << "PT: \n" << PT << endl;
+
+  rslt_img.assign(m, n, orgn_img._depth, orgn_img._spectrum);
+  projectiveTransform(orgn_img ,rslt_img, PT);
+  // rslt_img.display();
+  rslt_img.save(RESULT_PATH);
 
   return 0;
 }
