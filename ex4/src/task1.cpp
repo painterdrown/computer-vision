@@ -4,6 +4,7 @@
   结果：img/result1/#.jpg
 */
 
+#include <time.h>
 #include <vector>
 #include <iostream>
 #include "CImg.h"
@@ -93,10 +94,14 @@ void projectiveTransform(const CImg<double> &original_img, CImg<double> &result_
 
 int main() {
   CImg<double> orgn_img(FILE_PATH);
+  orgn_img = orgn_img.resize_halfXY();
   CImg<double> gray_img(orgn_img);
-  CImg<double> grad_img(orgn_img.width(), orgn_img.height(), 1, 1, 0);
+  CImg<double> grad_img(orgn_img._width, orgn_img._height, 1, 1, 0);
   CImg<double> rslt_img;
 
+  clock_t time1, time2, time3, time4;
+
+  time1 = clock();
   // Gray scale;  
   cimg_forXY(gray_img, x, y) {
     double r = gray_img(x, y, 0, 0);
@@ -132,6 +137,8 @@ int main() {
       }
     }
   }
+
+  time2 = clock();
 
   // Find peaks
   vector<Dot*> peaks;
@@ -280,8 +287,10 @@ int main() {
   int y3 = dot3->y;
   int m = (sqrt(pow(x1 - x0, 2) + pow(y1 - y0, 2)) + sqrt(pow(x3 - x2, 2) + pow(y3 - y2, 2))) / 2;
   int n = m * 297 / 210;
-  
+
   // cout << x0 << " " << y0 << " " << x1 << " " << y1 << " " << x2 << " " << y2 << " " << x3 << " " << y3 << " " << m << " " << n << " " << endl;
+
+  time3 = clock();
 
   MatrixXd A(8,8), PT(3, 3);
   VectorXd b(8), x(8);
@@ -300,8 +309,15 @@ int main() {
 
   rslt_img.assign(m, n, orgn_img._depth, orgn_img._spectrum);
   projectiveTransform(orgn_img ,rslt_img, PT);
-  // rslt_img.display();
+
+  time4 = clock();
+
+  rslt_img.display();
   rslt_img.save(RESULT_PATH);
+
+  cout << "边缘检测：" << (double)(time2 - time1)/1000 << "ms" << endl
+       << "寻找顶点：" << (double)(time3 - time2)/1000 << "ms" << endl
+       << "投影转换：" << (double)(time4 - time3)/1000 << "ms" << endl;
 
   return 0;
 }

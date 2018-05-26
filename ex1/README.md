@@ -3,7 +3,7 @@
 ## 输入图像
 
   + 开发环境：macOS
-  + 编译（在 ex1/ 目录下执行）：`1g++ -o bin/task# src/task#.cpp -O2 -lm -lpthread -I/usr/X11R6/include -L/usr/X11R6/lib -lm -lpthread -lX11`
+  + 编译（在 ex1/ 目录下执行）：`g++ -o bin/task# src/task#.cpp -O2 -lm -lpthread -I/usr/X11R6/include -L/usr/X11R6/lib -lm -lpthread -lX11`
   + 运行（在 ex1/ 目录下执行）：`bin/task#`
 
   PS：将命令中的 # 替换成对应任务的数字编号，如第一个任务就是 task1。
