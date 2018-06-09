@@ -4,9 +4,9 @@
 using namespace cimg_library;
 
 #define IN_FILE           "img/dataset1/kobe.jpg"
-#define OUT_FILE_GRADIENT "img/result1/kobe_gradient.jpg"
-#define OUT_FILE_NMS      "img/result1/kobe_nms.jpg"
-#define OUT_FILE          "img/result1/kobe_hough.jpg"
+#define OUT_FILE_GRADIENT "img/result1/kobe_g.jpg"
+#define OUT_FILE_NMS      "img/result1/ymhd_n.jpg"
+#define OUT_FILE          "img/result1/ymhd_r.jpg"
 
 #define IN_FILE_1           "img/dataset1/1.jpg"
 #define OUT_FILE_GRADIENT_1 "img/result1/1_gradient.jpg"
@@ -38,8 +38,10 @@ using namespace cimg_library;
 #define OUT_FILE_NMS_6      "img/result1/6_nms.jpg"
 #define OUT_FILE_6          "img/result1/6_hough.jpg"
 
+// g++ -o bin/task src/task.cpp src/Canny.cpp -O2 -lm -lpthread -I/usr/X11R6/include -L/usr/X11R6/lib -lm -lpthread -lX11
+
 int main(int argc, char* argv[]) {
-  // CImg<float> nms = doCanny(IN_FILE, OUT_FILE_GRADIENT, OUT_FILE_NMS);
+  // CImg<float> ymhd = doCanny(IN_FILE, OUT_FILE_GRADIENT, OUT_FILE_NMS);
 
 	// cimg_forXY(nms, x, y) {
 	// 	printf("(%d, %d) %f\n", x, y, nms.atXY(x, y));
@@ -47,7 +49,7 @@ int main(int argc, char* argv[]) {
 
 	CImg<float> kobe(IN_FILE);
 	cimg_forXY(kobe, x, y) {
-		if (kobe.atXY(x, y) == 0.0) kobe.atXY(x, y) = 1.0f;
+		if (kobe.atXY(x, y) == 0.0) kobe.atXY(x, y) = 255.0f;
 		else kobe.atXY(x, y) = 0.0f;
 		// printf("(%d, %d)  %f\n", x, y, kobe.atXY(x, y));
 	}
