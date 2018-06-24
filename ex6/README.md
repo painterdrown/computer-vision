@@ -616,3 +616,7 @@ int mainMatchSIFTFeatures(int argc, char **argv) {
 
 + 中间产生的图片、特征文件、匹配文件可以在 `data/test*/` 中
 + 拼接的结果图片在 `data/result` 中（需要自己把结果 .tga 文件转为常见的图片格式如 jpg）
+
+![](data/result/test1.jpg)
+
+![](data/result/test2.jpg)
