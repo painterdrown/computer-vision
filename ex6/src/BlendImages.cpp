@@ -259,58 +259,57 @@ static void NormalizeBlend(CFloatImage& acc, CByteImage& img)
  */
 CByteImage BlendImages(CImagePositionV& ipv, float blendWidth)
 {
-    // Assume all the images are of the same shape (for now)
-    CByteImage& img0 = ipv[0].img;
-    CShape sh        = img0.Shape();
-    int width        = sh.width;
-    int height       = sh.height;
-    int nBands       = sh.nBands;
-    int dim[2]       = {width, height};
+  // Assume all the images are of the same shape (for now)
+  CByteImage& img0 = ipv[0].img;
+  CShape sh        = img0.Shape();
+  int width        = sh.width;
+  int height       = sh.height;
+  int nBands       = sh.nBands;
+  int dim[2]       = {width, height};
 
-    // Compute the bounding box for the mosaic
-    int n = ipv.size();
-    float min_x = 0, min_y = 0;
-    float max_x = 0, max_y = 0;
-    int i;
-    for (i = 0; i < n; i++)
-    {
+  // Compute the bounding box for the mosaic
+  int n = ipv.size();
+  float min_x = 0, min_y = 0;
+  float max_x = 0, max_y = 0;
+  int i;
+  for (i = 0; i < n; i++) {
 		
 		CTransform3x3 &pos = ipv[i].position;
 
-        CVector3 corners[4];
+    CVector3 corners[4];
 
-        corners[0][0] = 0.0;
-        corners[0][1] = 0.0;
-        corners[0][2] = 1.0;
+    corners[0][0] = 0.0;
+    corners[0][1] = 0.0;
+    corners[0][2] = 1.0;
 
-        corners[1][0] = width - 1;
-        corners[1][1] = 0.0;
-        corners[1][2] = 1.0;
+    corners[1][0] = width - 1;
+    corners[1][1] = 0.0;
+    corners[1][2] = 1.0;
 
-        corners[2][0] = 0.0;
-        corners[2][1] = height - 1;
-        corners[2][2] = 1.0;
+    corners[2][0] = 0.0;
+    corners[2][1] = height - 1;
+    corners[2][2] = 1.0;
 
-        corners[3][0] = width - 1;
-        corners[3][1] = height - 1;
-        corners[3][2] = 1.0;
+    corners[3][0] = width - 1;
+    corners[3][1] = height - 1;
+    corners[3][2] = 1.0;
 
-        corners[0] = pos * corners[0];
-        corners[1] = pos * corners[1];
-        corners[2] = pos * corners[2];
-        corners[3] = pos * corners[3];
+    corners[0] = pos * corners[0];
+    corners[1] = pos * corners[1];
+    corners[2] = pos * corners[2];
+    corners[3] = pos * corners[3];
 
-        corners[0][0] /= corners[0][2];
-        corners[0][1] /= corners[0][2];
+    corners[0][0] /= corners[0][2];
+    corners[0][1] /= corners[0][2];
 
-        corners[1][0] /= corners[0][2];
-        corners[1][1] /= corners[0][2];
+    corners[1][0] /= corners[0][2];
+    corners[1][1] /= corners[0][2];
 
-        corners[2][0] /= corners[0][2];
-        corners[2][1] /= corners[0][2];
+    corners[2][0] /= corners[0][2];
+    corners[2][1] /= corners[0][2];
 
-        corners[3][0] /= corners[0][2];
-        corners[3][1] /= corners[0][2];
+    corners[3][0] /= corners[0][2];
+    corners[3][1] /= corners[0][2];
         
 		// *** BEGIN TODO #1 ***
 		// add some code here to update min_x, ..., max_y
@@ -337,76 +336,73 @@ CByteImage BlendImages(CImagePositionV& ipv, float blendWidth)
 		max_y = (float)MAX(max_y, corners[3][1]);
 
 		// *** END TODO #1 ***
-    }
+  }
 
-    // Create a floating point accumulation image
-    CShape mShape((int)(ceil(max_x) - floor(min_x)),
-                  (int)(ceil(max_y) - floor(min_y)), nBands);
-    CFloatImage accumulator(mShape);
-    accumulator.ClearPixels();
+  // Create a floating point accumulation image
+  CShape mShape((int)(ceil(max_x) - floor(min_x)),
+                (int)(ceil(max_y) - floor(min_y)), nBands);
+  CFloatImage accumulator(mShape);
+  accumulator.ClearPixels();
 
 	double x_init, x_final;
-    double y_init, y_final;
+  double y_init, y_final;
 
 	// Add in all of the images
-    for (i = 0; i < n; i++) {
-        
-        CTransform3x3 &M = ipv[i].position;
+  for (i = 0; i < n; i++) {
+    CTransform3x3 &M = ipv[i].position;
+    CTransform3x3 M_t = CTransform3x3::Translation(-min_x, -min_y) * M;
+    CByteImage& img = ipv[i].img;
 
-        CTransform3x3 M_t = CTransform3x3::Translation(-min_x, -min_y) * M;
+    // Perform the accumulation
+    AccumulateBlend(img, accumulator, M_t, blendWidth);
 
-        CByteImage& img = ipv[i].img;
+    if (i == 0) {
+      CVector3 p;
+      p[0] = 0.5 * width;
+      p[1] = 0.0;
+      p[2] = 1.0;
 
-        // Perform the accumulation
-		AccumulateBlend(img, accumulator, M_t, blendWidth);
+      p = M_t * p;
+      x_init = p[0];
+      y_init = p[1];
+    } else if (i == n - 1) {
+      CVector3 p;
+      p[0] = 0.5 * width;
+      p[1] = 0.0;
+      p[2] = 1.0;
 
-        if (i == 0) {
-            CVector3 p;
-            p[0] = 0.5 * width;
-            p[1] = 0.0;
-            p[2] = 1.0;
-
-            p = M_t * p;
-            x_init = p[0];
-            y_init = p[1];
-        } else if (i == n - 1) {
-            CVector3 p;
-            p[0] = 0.5 * width;
-            p[1] = 0.0;
-            p[2] = 1.0;
-
-            p = M_t * p;
-            x_final = p[0];
-            y_final = p[1];
-        }
+      p = M_t * p;
+      x_final = p[0];
+      y_final = p[1];
     }
+  }
 
 
 
-    // Normalize the results
-    CByteImage compImage(mShape);
-    NormalizeBlend(accumulator, compImage);
-    bool debug_comp = false;
-    if (debug_comp)
-        WriteFile(compImage, "tmp_comp.tga");
+  // Normalize the results
+  CByteImage compImage(mShape);
+  NormalizeBlend(accumulator, compImage);
+  bool debug_comp = false;
+  if (debug_comp)
+    WriteFile(compImage, "tmp_comp.tga");
 
-    // Allocate the final image shape
-    CShape cShape(mShape.width - width, height, nBands);
-    CByteImage croppedImage(cShape);
+  // Allocate the final image shape
+  CShape cShape(mShape.width - width, height, nBands);
+  CByteImage croppedImage(cShape);
 
-    // Compute the affine deformation
-    CTransform3x3 A;
-    
-	// *** BEGIN TODO #2 ***
-    // fill in the right entries in A to trim the left edge and
-    // to take out the vertical drift
+  // Compute the affine deformation
+  CTransform3x3 A;
+  
+  // *** BEGIN TODO #2 ***
+  // fill in the right entries in A to trim the left edge and
+  // to take out the vertical drift
 
-	A[1][0] = -(min_y - max_y + height) / (max_x - min_x);  //shear
+  A[1][0] = -(min_y - max_y + height) / (max_x - min_x);  //shear
 
-	// *** END TODO #2 ***
+  // *** END TODO #2 ***
 
-    // Warp and crop the composite
-    WarpGlobal(compImage, croppedImage, A, eWarpInterpLinear);
+  // Warp and crop the composite
+  WarpGlobal(compImage, croppedImage, A, eWarpInterpLinear);
 
-    return croppedImage;
+  return croppedImage;
 }

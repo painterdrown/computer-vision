@@ -124,41 +124,31 @@ int countInliers(const FeatureSet &f1, const FeatureSet &f2,
                  const vector<FeatureMatch> &matches, MotionModel m, float f,
                  CTransform3x3 M, double RANSACthresh, vector<int> &inliers)
 {
-    inliers.clear();
-    int count = 0;
+  inliers.clear();
+  int count = 0;
+  for (unsigned int i=0; i<(int) matches.size(); i++) {
+    // BEGIN TODO
 
-    for (unsigned int i=0; i<(int) matches.size(); i++) {
-        // BEGIN TODO
-        // determine if the ith matched feature f1[id1-1], when transformed by M,
-        // is within RANSACthresh of its match in f2
-        //
-        // if so, increment count and append i to inliers
-        //
-        // *NOTE* Each match contains two feature ids of matching features, id1 and id2.
-        //        These ids are 1-based indices into the feature arrays,
-        //        so you access the appropriate features as f1[id1-1] and f2[id2-1].
+    CVector3 feat1Vec = CVector3();
+    Feature testF1 = f1[matches[i].id1 - 1];
+    Feature testF2 = f2[matches[i].id2 - 1];
 
-		CVector3 feat1Vec = CVector3();
-		Feature testF1 = f1[matches[i].id1 - 1];
-		Feature testF2 = f2[matches[i].id2 - 1];
+    feat1Vec[0] = testF1.x;
+    feat1Vec[1] = testF1.y;
+    feat1Vec[2] = 1;
 
-		feat1Vec[0] = testF1.x;
-		feat1Vec[1] = testF1.y;
-		feat1Vec[2] = 1;
-
-		CVector3 translatedF1 = M * feat1Vec;
-		float dx = testF2.x - translatedF1[0];
-		float dy = testF2.y - translatedF1[1];
-		float distError = sqrt(dx*dx + dy * dy);
-		if (distError <= RANSACthresh) {
-			inliers.push_back(i);
-			count++;
-		}
-
-        // END TODO
+    CVector3 translatedF1 = M * feat1Vec;
+    float dx = testF2.x - translatedF1[0];
+    float dy = testF2.y - translatedF1[1];
+    float distError = sqrt(dx*dx + dy * dy);
+    if (distError <= RANSACthresh) {
+      inliers.push_back(i);
+      count++;
     }
 
-    return count;
+    // END TODO
+  }
+  return count;
 }
 
 /******************* TO DO *********************
@@ -178,20 +168,15 @@ int leastSquaresFit(const FeatureSet &f1, const FeatureSet &f2,
                     const vector<FeatureMatch> &matches, MotionModel m, float f,
                     const vector<int> &inliers, CTransform3x3& M)
 {
-    // for project 2, the transformation is a translation and
-    // only has two degrees of freedom
-    //
-    // therefore, we simply compute the average translation vector
-    // between the feature in f1 and its match in f2 for all inliers
-    double u = 0;
-    double v = 0;
+  double u = 0;
+  double v = 0;
 
-    for (int i=0; i<inliers.size(); i++) {
-        double xTrans, yTrans;
+  for (int i=0; i<inliers.size(); i++) {
+    double xTrans, yTrans;
 
-        // BEGIN TODO
-        // compute the translation implied by the ith inlier match
-        // and store it in (xTrans,yTrans)
+    // BEGIN TODO
+    // compute the translation implied by the ith inlier match
+    // and store it in (xTrans,yTrans)
 
 		Feature testF1 = f1[matches[inliers[i]].id1 - 1];
 		Feature testF2 = f2[matches[inliers[i]].id2 - 1];
@@ -199,24 +184,24 @@ int leastSquaresFit(const FeatureSet &f1, const FeatureSet &f2,
 		xTrans = testF2.x - testF1.x;
 		yTrans = testF2.y - testF1.y;
 
-        // END TODO
+    // END TODO
 
-        u += xTrans;
-        v += yTrans;
-    }
+    u += xTrans;
+    v += yTrans;
+  }
 
-    u /= inliers.size();
-    v /= inliers.size();
+  u /= inliers.size();
+  v /= inliers.size();
 
-    M[0][0] = 1;
-    M[0][1] = 0;
-    M[0][2] = u;
-    M[1][0] = 0;
-    M[1][1] = 1;
-    M[1][2] = v;
-    M[2][0] = 0;
-    M[2][1] = 0;
-    M[2][2] = 1;
+  M[0][0] = 1;
+  M[0][1] = 0;
+  M[0][2] = u;
+  M[1][0] = 0;
+  M[1][1] = 1;
+  M[1][2] = v;
+  M[2][0] = 0;
+  M[2][1] = 0;
+  M[2][2] = 1;
 
-    return 0;
+  return 0;
 }

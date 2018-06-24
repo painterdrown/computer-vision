@@ -124,7 +124,8 @@ int mainMatchFeatures(int argc, char **argv) {
 		return -1;
 	}
 
-    double threshold = atof(argv[4]);
+  double threshold = atof(argv[4]);
+  printf("the matching threshold is: %f\n", threshold);
 
 	vector<FeatureMatch> matches;
 	double totalScore;

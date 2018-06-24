@@ -579,47 +579,44 @@ void ssdMatchFeatures(const FeatureSet &f1, const FeatureSet &f2, vector<Feature
 	}
 }
 
-//TODO: Write this function to perform ratio feature matching.  
+// TODO: Write this function to perform ratio feature matching.  
 // This just uses the ratio of the SSD distance of the two best matches
 // and matches a feature in the first image with the closest feature in the second image.
 // It can match multiple features in the first image to the same feature in
 // the second image.  (See class notes for more information)
 void ratioMatchFeatures(const FeatureSet &f1, const FeatureSet &f2, vector<FeatureMatch> &matches, double &totalScore) 
 {
-	int m = f1.size();
+  int m = f1.size();
 	int n = f2.size();
 
 	matches.resize(m);
 	totalScore = 0;
 
 	double d;
-	double dBest, dSecond;
+	double dBest, dSecondBest;
 	int idBest;
 
-  int num_matched = 0;
-	for (int i=0; i<m; i++) {
+	for (int i = 0; i < m; i++) {
 		dBest = 1e100;
-    // dSecond = 1e100;
 		idBest = 0;
 
-		for (int j=0; j<n; j++) {
+		for (int j = 0; j < n; j++)
+		{
 			d = distanceSSD(f1[i].data, f2[j].data);
 
-			if (d < dBest) {
-				dSecond = dBest;
-        dBest = d;
+			if (d < dBest)
+			{
+				dSecondBest = dBest;
+				dBest = d;
 				idBest = f2[j].id;
-      } else if (d < dSecond) {
-          dSecond = d;
-      }
+			}
 		}
 
-    matches[i].id1 = f1[i].id;
-    matches[i].id2 = idBest;
-		matches[i].score = dBest / dSecond;
-		// assert(matches[i].score<=1);
+		matches[i].id1 = f1[i].id;
+		matches[i].id2 = idBest;
+		matches[i].score = dBest / dSecondBest;
 		totalScore += matches[i].score;
-  }
+	}
 }
 
 

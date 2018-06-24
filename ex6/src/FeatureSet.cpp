@@ -97,14 +97,11 @@ ostream &operator<<(ostream &os, const Feature &f) {
 	os << f.type << '\n';
 	os << f.id << '\n';
 	os << f.x << ' ' << f.y << '\n';
-    os << f.angleRadians << '\n';
-
+  os << f.angleRadians << '\n';
 	os << f.data.size() << '\n';
-
 	for (unsigned int i=0; i<f.data.size(); i++) {
 		os << f.data[i] << '\n';
 	}
-
 	return os;
 }
 

@@ -40,60 +40,46 @@
 CFloatImage WarpSphericalField(CShape srcSh, CShape dstSh, float f,
                                  float k1, float k2, const CTransform3x3 &r)
 {
-    // Set up the pixel coordinate image
-    dstSh.nBands = 2;
-    CFloatImage uvImg(dstSh);   // (u,v) coordinates
+  // Set up the pixel coordinate image
+  dstSh.nBands = 2;
+  CFloatImage uvImg(dstSh);   // (u,v) coordinates
 
-    // Fill in the values
-    for (int y = 0; y < dstSh.height; y++)
-    {
-        float *uv = &uvImg.Pixel(0, y, 0);
-        for (int x = 0; x < dstSh.width; x++, uv += 2)
-        {
-			// (x,y) is the spherical image coordinates. 
-            // (xf,yf) is the spherical coordinates, e.g., xf is the angle theta
-			// and yf is the angle phi
+  // Fill in the values
+  for (int y = 0; y < dstSh.height; y++) {
+    float *uv = &uvImg.Pixel(0, y, 0);
+    for (int x = 0; x < dstSh.width; x++, uv += 2) {
+      float xf = (x - 0.5f*dstSh.width ) / f;
+      float yf = (y - 0.5f*dstSh.height) / f;
+      float xt, yt, zt;
+      CVector3 p;
 
-            float xf = (x - 0.5f*dstSh.width ) / f;
-            float yf = (y - 0.5f*dstSh.height) / f;
+      // *** BEGIN TODO ***
 
-			// (xt,yt,zt) are intermediate coordinates to which you can
-			// apply the spherical correction and radial distortion
-            float xt, yt, zt;
-			CVector3 p;
- 
-			// *** BEGIN TODO ***
-			// add code to apply the spherical correction, i.e.,
-			// compute the Euclidean coordinates, rotate according to
-			// r, and project the point to the z=1 plane at
-			// (xt/zt,yt/zt,1), then distort with radial distortion
-			// coefficients k1 and k2
+      //convert the theta and phi to spherical coordinates 
+      p[0] = sin(xf)*cos(yf);
+      p[1] = sinf(yf);
+      p[2] = cos(xf)*cos(yf);
 
-			//convert the theta and phi to spherical coordinates 
-			p[0] = sin(xf)*cos(yf);
-			p[1] = sinf(yf);
-			p[2] = cos(xf)*cos(yf);
+      //p = r*p; //p now holds the rotated spherical coordinates ?
 
-			//p = r*p; //p now holds the rotated spherical coordinates ?
+      //normalize all the coordinates by z_hat
+      xt = p[0] / p[2];
+      yt = p[1] / p[2];
+      zt = 1;
 
-			//normalize all the coordinates by z_hat
-			xt = p[0] / p[2];
-			yt = p[1] / p[2];
-			zt = 1;
+      //apply radial distortion
+      float r_squared = xt * xt + yt * yt;
+      xt = xt * (1 + k1 * r_squared + k2 * r_squared*r_squared);
+      yt = yt * (1 + k1 * r_squared + k2 * r_squared*r_squared);
 
-			//apply radial distortion
-			float r_squared = xt * xt + yt * yt;
-			xt = xt * (1 + k1 * r_squared + k2 * r_squared*r_squared);
-			yt = yt * (1 + k1 * r_squared + k2 * r_squared*r_squared);
+      // *** END TODO ***
 
-			// *** END TODO ***
-
-            // Convert back to regular pixel coordinates and store
-            float xn = 0.5f*srcSh.width  + xt*f;
-            float yn = 0.5f*srcSh.height + yt*f;
-            uv[0] = xn;
-            uv[1] = yn;
-        }
+      // Convert back to regular pixel coordinates and store
+      float xn = 0.5f*srcSh.width  + xt*f;
+      float yn = 0.5f*srcSh.height + yt*f;
+      uv[0] = xn;
+      uv[1] = yn;
     }
-    return uvImg;
+  }
+  return uvImg;
 }
