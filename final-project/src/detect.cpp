@@ -274,24 +274,24 @@ int main(int argc, char *argv[]) {
   char *filename = argv[2];
   char origin_path[50];
   char a4_path[50];
-  char a4_2val_path[50];
+  char a4_bi_path[50];
 
   sprintf(origin_path, "data/%s/%s", set, filename);
   sprintf(a4_path, "data/%s/output/a4_%s", set, filename);
-  sprintf(a4_2val_path, "data/%s/output/a4_2val_%s", set, filename);
+  sprintf(a4_bi_path, "data/%s/output/a4_bi_%s", set, filename);
 
-  CImg<double> a4, a4_2val;
+  CImg<double> a4, a4_bi;
 
   // 提取 A4
   a4 = detect(origin_path);
   a4.save(a4_path);
 
-  a4_2val.assign(a4._width, a4._height, 1, 1, 0);
+  a4_bi.assign(a4._width, a4._height, 1, 1, 0);
   // 二值化
   cimg_forXY(a4, x, y) {
-    a4_2val(x, y) = (a4(x, y, 0, 0) > THRESHOLD2 && a4(x, y, 0, 0) > THRESHOLD2 && a4(x, y, 0, 0) > THRESHOLD2) ? 255 : 0;
+    a4_bi(x, y) = (a4(x, y, 0, 0) > THRESHOLD2 && a4(x, y, 0, 0) > THRESHOLD2 && a4(x, y, 0, 0) > THRESHOLD2) ? 255 : 0;
   }
-  a4_2val.save(a4_2val_path);
+  a4_bi.save(a4_bi_path);
 
   return 0;
 }
