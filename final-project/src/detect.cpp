@@ -15,6 +15,7 @@ using namespace Eigen;
 #define BLUR        3
 #define SLOPE_FLAG  1
 #define PI          3.14159265358979323846
+#define THRESHOLD2  130
 
 // 2D Dot(x, y) [value]    
 struct Dot {
@@ -80,9 +81,7 @@ void projectiveTransform(const CImg<double> &original_img, CImg<double> &result_
   }
 }
 
-void detect(char *file_path, char *result_path) {
-  printf("detect\n");
-
+CImg<double> detect(char *file_path) {
   CImg<double> orgn_img(file_path);
   orgn_img = orgn_img.resize_halfXY();
   CImg<double> gray_img(orgn_img);
@@ -201,8 +200,6 @@ void detect(char *file_path, char *result_path) {
     }
   }
 
-  orgn_img.display();
-
   Dot *dot0, *dot1, *dot2, *dot3;
   double dis[4][4];
   int nearpos[4];
@@ -269,13 +266,32 @@ void detect(char *file_path, char *result_path) {
   printf("find lines: %fms\n", (double)(time3 - time2)/1000);
   printf("projective transform: %fms\n", (double)(time4 - time3)/1000);
 
-  rslt_img.save(result_path);
+  return rslt_img;
 }
 
 int main(int argc, char *argv[]) {
-  char *file_path = argv[1];
-  char *result_path = argv[2];
-  detect(file_path, result_path);
+  char *set = argv[1];
+  char *filename = argv[2];
+  char origin_path[50];
+  char a4_path[50];
+  char a4_2val_path[50];
+
+  sprintf(origin_path, "data/%s/%s", set, filename);
+  sprintf(a4_path, "data/%s/output/a4_%s", set, filename);
+  sprintf(a4_2val_path, "data/%s/output/a4_2val_%s", set, filename);
+
+  CImg<double> a4, a4_2val;
+
+  // 提取 A4
+  a4 = detect(origin_path);
+  a4.save(a4_path);
+
+  a4_2val.assign(a4._width, a4._height, 1, 1, 0);
+  // 二值化
+  cimg_forXY(a4, x, y) {
+    a4_2val(x, y) = (a4(x, y, 0, 0) > THRESHOLD2 && a4(x, y, 0, 0) > THRESHOLD2 && a4(x, y, 0, 0) > THRESHOLD2) ? 255 : 0;
+  }
+  a4_2val.save(a4_2val_path);
 
   return 0;
 }
