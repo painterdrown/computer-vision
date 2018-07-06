@@ -42,7 +42,7 @@ double distance(double x, double y) {
 }
 
 // Polar coordinate intersection at x  
-int crossX(int angle, int distance, int x) {
+int cross_x(int angle, int distance, int x) {
   double theta = (double)angle * PI / 180.0;
   double m = -cos(theta) / sin(theta);
   double b = (double)distance / sin(theta);
@@ -50,14 +50,14 @@ int crossX(int angle, int distance, int x) {
 }
 
 // Polar coordinate intersection at y  
-int crossY(int angle, int distance, int y) {
+int cross_y(int angle, int distance, int y) {
   double theta = (double)angle * PI / 180.0;
   double m = -cos(theta) / sin(theta);
   double b = (double)distance / sin(theta);
   return ((double)(y - b) / m);
 }
 
-void projectiveTransform(const CImg<double> &original_img, CImg<double> &result_img, const MatrixXd &PT) {
+void projective_transform(const CImg<double> &original_img, CImg<double> &result_img, const MatrixXd &PT) {
   const double a = PT(0, 0),
                b = PT(0, 1),
                c = PT(0, 2),
@@ -138,10 +138,10 @@ CImg<double> detect(const CImg<double> &orgn_img) {
   cimg_forXY(hough_img, angle, polar) {
     if (hough_img(angle, polar) > THRESHOLD1) {  // 是否是峰值
       bool flag = false;
-      const int x0 = crossY(angle, polar, ymin);
-      const int x1 = crossY(angle, polar, ymax);
-      const int y0 = crossX(angle, polar, xmin);
-      const int y1 = crossX(angle, polar, xmax);
+      const int x0 = cross_y(angle, polar, ymin);
+      const int x1 = cross_y(angle, polar, ymax);
+      const int y0 = cross_x(angle, polar, xmin);
+      const int y1 = cross_x(angle, polar, xmax);
       if ((x0 >= 0 && x0 <= xmax) ||  // 表示的直线是否在图像内
           (x1 >= 0 && x1 <= xmax) ||
           (y0 >= 0 && y0 <= ymax) ||
@@ -255,7 +255,7 @@ CImg<double> detect(const CImg<double> &orgn_img) {
   PT << x(0), x(1), x(2), x(3), x(4), x(5), x(6), x(7), 1;
 
   rslt_img.assign(m, n, orgn_img._depth, orgn_img._spectrum);
-  projectiveTransform(orgn_img ,rslt_img, PT);
+  projective_transform(orgn_img ,rslt_img, PT);
 
   return rslt_img;
 }
@@ -349,7 +349,18 @@ vector<int> divide_cols(const CImg<double> &img, int y0, int y1) {
   return cols;
 }
 
-CImg<double> cut(const CImg<double> &img, int y0, int y1, int x0, int x1) {}
+CImg<double> get_crop(const CImg<double> &img, int x0, int y0, int x1, int y1) {
+  CImg<double> result;
+  int width = x1-x0+1;
+  int height = y1-y0+1;
+  result.assign(width, height, 1, 1, 0);
+  for (int x = 0; x < width; ++x) {
+    for (int y = 0; y < height; ++y) {
+      result(x, y) = img(x+x0, y+y0);
+    }
+  }
+  return result;
+}
 
 void resize_origin(CImg<double> &img) {
   img = img.resize_halfXY();
@@ -361,15 +372,16 @@ int main(int argc, char *argv[]) {
   char *filename = argv[1];
   char origin_path[50];
   char a4_path[50];
-  char a4_bi_path[50];
-  char a4_seg_path[50];
-  CImg<double> origin, a4, a4_bi, a4_seg;
+  char bi_path[50];
+  char seg_path[50];
+  char crop_path[50];
+  CImg<double> origin, a4, bi, seg, crop;
   clock_t time0, time1, time2, time3, time4;
 
-  sprintf(origin_path, "data/test/%s", filename);
-  sprintf(a4_path, "data/test/a4_%s", filename);
-  sprintf(a4_bi_path, "data/test/a4_bi_%s", filename);
-  sprintf(a4_seg_path, "data/test/a4_seg_%s", filename);
+  sprintf(origin_path, "data/origin/%s.jpg", filename);
+  sprintf(a4_path, "data/a4/%s.jpg", filename);
+  sprintf(bi_path, "data/a4_bi/%s.jpg", filename);
+  sprintf(seg_path, "data/a4_seg/%s.jpg", filename);
 
   time0 = clock();
 
@@ -382,31 +394,37 @@ int main(int argc, char *argv[]) {
   printf("detection:\t%fms\n", (double)(time1-time0)/1000);
 
   // 二值化
-  a4_bi.assign(a4._width, a4._height, 1, 1, 0);
+  bi.assign(a4._width, a4._height, 1, 1, 0);
   cimg_forXY(a4, x, y) {
-    a4_bi(x, y) = (a4(x, y, 0, 0) > THRESHOLD2 && a4(x, y, 0, 0) > THRESHOLD2 && a4(x, y, 0, 0) > THRESHOLD2) ? 255 : 0;
+    bi(x, y) = (a4(x, y, 0, 0) > THRESHOLD2 && a4(x, y, 0, 0) > THRESHOLD2 && a4(x, y, 0, 0) > THRESHOLD2) ? 255 : 0;
   }
-  clear_edges(a4_bi);
-  a4_bi.save(a4_bi_path);
+  clear_edges(bi);
+  bi.save(bi_path);
   time2 = clock();
   printf("binarization:\t%fms\n", (double)(time2-time1)/1000);
 
   // 行分割
   const double black[] = { 0, 0, 0 };
-  a4_seg.assign(a4_bi);
-  vector<int> rows = divide_rows(a4_seg);
+  seg.assign(bi);
+  vector<int> rows = divide_rows(seg);
+  int row_count = 0;
   for (int i = 0; i < rows.size(); i += 2) {
     // if (rows[i+1]-rows[i] < THRESHOLD5) continue;
-    vector<int> cols = divide_cols(a4_seg, rows[i], rows[i+1]);
+    vector<int> cols = divide_cols(seg, rows[i], rows[i+1]);
+    int col_count = 0;
     for (int j = 0; j < cols.size(); j += 2) {
-      a4_seg.draw_line(cols[j], rows[i], cols[j+1], rows[i], black);
-      a4_seg.draw_line(cols[j], rows[i+1], cols[j+1], rows[i+1], black);
-      a4_seg.draw_line(cols[j], rows[i], cols[j], rows[i+1], black);
-      a4_seg.draw_line(cols[j+1], rows[i], cols[j+1], rows[i+1], black);
-      // CImg<double> digit = cut(a4_seg, rows[i], rows[i+1], cols[j], cols[j+1]);
+      seg.draw_line(cols[j], rows[i], cols[j+1], rows[i], black);
+      seg.draw_line(cols[j], rows[i+1], cols[j+1], rows[i+1], black);
+      seg.draw_line(cols[j], rows[i], cols[j], rows[i+1], black);
+      seg.draw_line(cols[j+1], rows[i], cols[j+1], rows[i+1], black);
+      crop = get_crop(bi, cols[j], rows[i], cols[j+1], rows[i+1]);
+      sprintf(crop_path, "data/a4_digits/%s/%d_%d.jpg", filename, row_count, col_count);
+      crop.save(crop_path);
+      ++col_count;
     }
+    ++row_count;
   }
-  a4_seg.save(a4_seg_path);
+  seg.save(seg_path);
   time3 = clock();
   printf("segmentation:\t%fms\n", (double)(time3-time2)/1000);
 
