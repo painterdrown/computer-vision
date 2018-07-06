@@ -399,7 +399,7 @@ void resize_28by28(CImg<double> &img) {
     }
   }
   img = new_img;
-  // new_img.resize(28, 28, -100, -100, 5);
+  new_img.resize(28, 28);
 }
 
 int main(int argc, char *argv[]) {
