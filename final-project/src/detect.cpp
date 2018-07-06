@@ -1,5 +1,6 @@
 #include <time.h>
 #include <vector>
+#include <algorithm>
 #include "CImg.h"
 #undef Success
 #include "Eigen/Dense"
@@ -15,14 +16,14 @@ using namespace Eigen;
 #define BLUR        3
 #define SLOPE_FLAG  1
 #define THRESHOLD1  800
-#define THRESHOLD2  130
+#define THRESHOLD2  160
 #define THRESHOLD3  5
 #define THRESHOLD4  80
 #define THRESHOLD5  28
 #define THRESHOLD6  0
 #define THRESHOLD7  10
 #define MARGIN_Y    10
-#define MARGIN_X    2
+#define MARGIN_X    0
 
 // 2D Dot(x, y) [value]    
 struct Dot {
@@ -362,11 +363,44 @@ CImg<double> get_crop(const CImg<double> &img, int x0, int y0, int x1, int y1) {
   return result;
 }
 
+void remove_margin(CImg<double> &img) {
+  int y0, y1;
+  for (y0 = 0; y0 < img._height; ++y0) {
+    int count = 0;
+    for (int x = 0; x < img._width; ++x) {
+      count += img(x, y0) == 0 ? 1 : 0;
+    }
+    if (count != 0) break;
+  }
+  for (y1 = img._height-1; y1 >= 0; --y1) {
+    int count = 0;
+    for (int x = 0; x < img._width; ++x) {
+      count += img(x, y1) == 0 ? 1 : 0;
+    }
+    if (count != 0) break;
+  }
+  img = get_crop(img, 0, y0, img._width-1, y1);
+}
+
 void resize_origin(CImg<double> &img) {
   img = img.resize_halfXY();
 }
 
-void resize_28by28(CImg<double> &img) {}
+void resize_28by28(CImg<double> &img) {
+  CImg<double> new_img;
+  int side = max(img._width, img._height);
+  side += side/3;
+  int margin_x = (side-img._width) / 2;
+  int margin_y = (side-img._height) / 2;
+  new_img.assign(side, side, 1, 1, 0);
+  cimg_forXY(img, x, y) {
+    if (img(x, y) == 0) {
+      new_img(x+margin_x, y+margin_y) = 255;
+    }
+  }
+  img = new_img;
+  // new_img.resize(28, 28, -100, -100, 5);
+}
 
 int main(int argc, char *argv[]) {
   char *filename = argv[1];
@@ -409,7 +443,7 @@ int main(int argc, char *argv[]) {
   vector<int> rows = divide_rows(seg);
   int row_count = 0;
   for (int i = 0; i < rows.size(); i += 2) {
-    // if (rows[i+1]-rows[i] < THRESHOLD5) continue;
+    if (rows[i+1]-rows[i] < THRESHOLD5) continue;
     vector<int> cols = divide_cols(seg, rows[i], rows[i+1]);
     int col_count = 0;
     for (int j = 0; j < cols.size(); j += 2) {
@@ -418,6 +452,8 @@ int main(int argc, char *argv[]) {
       seg.draw_line(cols[j], rows[i], cols[j], rows[i+1], black);
       seg.draw_line(cols[j+1], rows[i], cols[j+1], rows[i+1], black);
       crop = get_crop(bi, cols[j], rows[i], cols[j+1], rows[i+1]);
+      remove_margin(crop);
+      resize_28by28(crop);
       sprintf(crop_path, "data/a4_digits/%s/%d_%d.jpg", filename, row_count, col_count);
       crop.save(crop_path);
       ++col_count;
