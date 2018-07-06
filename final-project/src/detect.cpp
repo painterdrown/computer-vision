@@ -9,13 +9,17 @@ using namespace std;
 using namespace cimg_library;
 using namespace Eigen;
 
+#define PI          3.14159265358979323846
 #define GRADLIMIT   15
-#define THRESHOLD   800
 #define DIFF        90
 #define BLUR        3
 #define SLOPE_FLAG  1
-#define PI          3.14159265358979323846
+#define THRESHOLD1  800
 #define THRESHOLD2  130
+#define THRESHOLD3  80
+#define THRESHOLD4  5
+#define THRESHOLD5  28
+#define MARGIN      10
 
 // 2D Dot(x, y) [value]    
 struct Dot {
@@ -81,16 +85,10 @@ void projectiveTransform(const CImg<double> &original_img, CImg<double> &result_
   }
 }
 
-CImg<double> detect(char *file_path) {
-  CImg<double> orgn_img(file_path);
-  orgn_img = orgn_img.resize_halfXY();
+CImg<double> detect(const CImg<double> &orgn_img) {
   CImg<double> gray_img(orgn_img);
   CImg<double> grad_img(orgn_img._width, orgn_img._height, 1, 1, 0);
   CImg<double> rslt_img;
-
-  clock_t time1, time2, time3, time4;
-
-  time1 = clock();
 
   // Gray scale;  
   cimg_forXY(gray_img, x, y) {
@@ -128,8 +126,6 @@ CImg<double> detect(char *file_path) {
     }
   }
 
-  time2 = clock();
-
   // Find peaks
   vector<Dot*> peaks;
   const int ymin = 0;
@@ -137,7 +133,7 @@ CImg<double> detect(char *file_path) {
   const int xmin = 0;
   const int xmax = orgn_img.width() - 1;
   cimg_forXY(hough_img, angle, polar) {
-    if (hough_img(angle, polar) > THRESHOLD) {  // 是否是峰值
+    if (hough_img(angle, polar) > THRESHOLD1) {  // 是否是峰值
       bool flag = false;
       const int x0 = crossY(angle, polar, ymin);
       const int x1 = crossY(angle, polar, ymax);
@@ -241,8 +237,6 @@ CImg<double> detect(char *file_path) {
   int m = (sqrt(pow(x1 - x0, 2) + pow(y1 - y0, 2)) + sqrt(pow(x3 - x2, 2) + pow(y3 - y2, 2))) / 2;
   int n = m * 297 / 210;
 
-  time3 = clock();
-
   MatrixXd A(8,8), PT(3, 3);
   VectorXd b(8), x(8);
   A << x0, y0, 1, 0, 0, 0, 0, 0,
@@ -260,36 +254,117 @@ CImg<double> detect(char *file_path) {
   rslt_img.assign(m, n, orgn_img._depth, orgn_img._spectrum);
   projectiveTransform(orgn_img ,rslt_img, PT);
 
-  time4 = clock();
-
-  printf("detect edge: %fms\n", (double)(time2 - time1)/1000);
-  printf("find lines: %fms\n", (double)(time3 - time2)/1000);
-  printf("projective transform: %fms\n", (double)(time4 - time3)/1000);
-
   return rslt_img;
 }
 
+void clear_point(CImg<double> &img, int x, int y) {
+  if (img(x, y) != 0) return;
+  else img(x, y) = 255;
+  if (x-1 >= 0) clear_point(img, x-1, y);
+  if (x+1 < img._width) clear_point(img, x+1, y);
+  if (y-1 >= 0) clear_point(img, x, y-1);
+  if (y+1 < img._height) clear_point(img, x, y+1);
+}
+
+void clear_edges(CImg<double> &img) {
+  // 上边、下边
+  for (int x = 0; x < img._width; ++x) {
+    clear_point(img, x, 0);
+    clear_point(img, x, img._height-1);
+  }
+  // 左边、右边
+  for (int y = 0; y < img._height; ++y) {
+    clear_point(img, 0, y);
+    clear_point(img, img._width-1, y);
+  }
+}
+
+vector<int> divide_rows(const CImg<double> &img) {
+  vector<int> hill, integration, rows;
+  hill.resize(img._height);
+  integration.resize(img._height);
+  bool flag = true;
+  for (int y = 0; y < img._height; ++y) {
+    hill[y] = 0;
+    for (int x = 0; x < img._width; ++x) {
+      hill[y] += img(x, y) == 0 ? 1 : 0;
+    }
+    hill[y] = hill[y] < THRESHOLD4 ? 0 : hill[y];
+    integration[y] = (hill[y] == 0) ? 0 : (flag ? hill[y] : hill[y] + integration[y-1]);
+    flag = hill[y] == 0;
+  }
+  int peak = -1;
+  for (int y = img._height-1; y >= 0; --y) {
+    // 还没找到一个顶峰
+    if (peak == -1) {
+      if (integration[y] > THRESHOLD3) {
+        rows.push_back(y+MARGIN < img._height ? y+MARGIN : img._height-1);
+        peak = y;
+      }
+    } else {
+      if (integration[y] == 0) {
+        rows.push_back(y-MARGIN >= 0 ? y-MARGIN : 0);
+        peak = -1;
+      }
+    }
+  }
+  return rows;
+}
+
+vector<int> divide_cols(const CImg<double> &img, int y0, int y1) {
+  vector<int> rols;
+  if (y0 >= y1) return rols;
+  return rols;
+}
+
+CImg<double> cut(const CImg<double> &img, int y0, int y1, int x0, int x1) {}
+
+void resize_28by28(CImg<double> &img) {}
+
 int main(int argc, char *argv[]) {
-  char *set = argv[1];
-  char *filename = argv[2];
+  char *filename = argv[1];
   char origin_path[50];
   char a4_path[50];
   char a4_bi_path[50];
+  CImg<double> origin, a4, a4_bi;
+  clock_t time0, time1, time2, time3, time4;
 
-  sprintf(origin_path, "data/%s/%s", set, filename);
-  sprintf(a4_path, "data/%s/output/a4_%s", set, filename);
-  sprintf(a4_bi_path, "data/%s/output/a4_bi_%s", set, filename);
+  sprintf(origin_path, "data/test/%s", filename);
+  sprintf(a4_path, "data/test/a4_%s", filename);
+  sprintf(a4_bi_path, "data/test/a4_bi_%s", filename);
 
-  CImg<double> a4, a4_bi;
+  time0 = clock();
 
   // 提取 A4
-  a4 = detect(origin_path);
+  origin.assign(origin_path);
+  origin = origin.resize_halfXY();
+  a4 = detect(origin);
   a4.save(a4_path);
+  time1 = clock();
+  printf("detection: %fms\n", (double)(time1-time1)/1000);
 
-  a4_bi.assign(a4._width, a4._height, 1, 1, 0);
   // 二值化
+  a4_bi.assign(a4._width, a4._height, 1, 1, 0);
   cimg_forXY(a4, x, y) {
     a4_bi(x, y) = (a4(x, y, 0, 0) > THRESHOLD2 && a4(x, y, 0, 0) > THRESHOLD2 && a4(x, y, 0, 0) > THRESHOLD2) ? 255 : 0;
+  }
+  clear_edges(a4_bi);
+  time2 = clock();
+  printf("binarization: %fms\n", (double)(time2-time1)/1000);
+
+  // 行分割
+  const double black[] = { 0, 0, 0 };
+  vector<int> rows = divide_rows(a4_bi);
+  for (int i = 0; i < rows.size(); i += 2) {
+    // if (rows[i]-rows[i+1] < THRESHOLD5) continue;
+    vector<int> cols = divide_cols(a4_bi, rows[i], rows[i+1]);
+    for (int j = 0; j < cols.size(); j += 2) {
+      a4_bi.draw_line(cols[j], rows[i], cols[j+1], rows[i], black);
+      a4_bi.draw_line(cols[j], rows[i+1], cols[j+1], rows[i+1], black);
+      a4_bi.draw_line(cols[j], rows[i], cols[j], rows[i+1], black);
+      a4_bi.draw_line(cols[j+1], rows[i], cols[j+1], rows[i+1], black);
+      // CImg<double> digit = cut(a4_bi, rows[i], rows[i+1], cols[j], cols[j+1]);
+    }
   }
   a4_bi.save(a4_bi_path);
 
