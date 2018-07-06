@@ -16,10 +16,13 @@ using namespace Eigen;
 #define SLOPE_FLAG  1
 #define THRESHOLD1  800
 #define THRESHOLD2  130
-#define THRESHOLD3  80
-#define THRESHOLD4  5
+#define THRESHOLD3  5
+#define THRESHOLD4  80
 #define THRESHOLD5  28
-#define MARGIN      10
+#define THRESHOLD6  0
+#define THRESHOLD7  10
+#define MARGIN_Y    10
+#define MARGIN_X    2
 
 // 2D Dot(x, y) [value]    
 struct Dot {
@@ -289,7 +292,7 @@ vector<int> divide_rows(const CImg<double> &img) {
     for (int x = 0; x < img._width; ++x) {
       hill[y] += img(x, y) == 0 ? 1 : 0;
     }
-    hill[y] = hill[y] < THRESHOLD4 ? 0 : hill[y];
+    hill[y] = hill[y] < THRESHOLD3 ? 0 : hill[y];
     integration[y] = (hill[y] == 0) ? 0 : (flag ? hill[y] : hill[y] + integration[y-1]);
     flag = hill[y] == 0;
   }
@@ -297,27 +300,60 @@ vector<int> divide_rows(const CImg<double> &img) {
   for (int y = img._height-1; y >= 0; --y) {
     // 还没找到一个顶峰
     if (peak == -1) {
-      if (integration[y] > THRESHOLD3) {
-        rows.push_back(y+MARGIN < img._height ? y+MARGIN : img._height-1);
+      if (integration[y] > THRESHOLD4) {
+        rows.push_back(y+MARGIN_Y < img._height ? y+MARGIN_Y : img._height-1);
         peak = y;
       }
     } else {
       if (integration[y] == 0) {
-        rows.push_back(y-MARGIN >= 0 ? y-MARGIN : 0);
+        rows.push_back(y-MARGIN_Y >= 0 ? y-MARGIN_Y : 0);
         peak = -1;
       }
     }
   }
+  reverse(rows.begin(), rows.end());
   return rows;
 }
 
 vector<int> divide_cols(const CImg<double> &img, int y0, int y1) {
-  vector<int> rols;
-  if (y0 >= y1) return rols;
-  return rols;
+  vector<int> hill, integration, cols;
+  hill.resize(img._width);
+  integration.resize(img._width);
+  bool flag = true;  // 记录上一个是否为 0
+  for (int x = 0; x < img._width; ++x) {
+    hill[x] = 0;
+    for (int y = y0; y <= y1; ++y) {
+      hill[x] += img(x, y) == 0 ? 1 : 0;
+    }
+    hill[x] = hill[x] < THRESHOLD6 ? 0 : hill[x];
+    integration[x] = (hill[x] == 0) ? 0 : (flag ? hill[x] : hill[x] + integration[x-1]);
+    flag = hill[x] == 0;
+  }
+  int peak = -1;
+  for (int x = img._width-1; x >= 0; --x) {
+    // 还没找到一个顶峰
+    if (peak == -1) {
+      if (integration[x] > THRESHOLD7) {
+        cols.push_back(x+MARGIN_X < img._width ? x+MARGIN_X : img._width-1);
+        peak = x;
+      }
+    // 已经找到一个峰
+    } else { 
+      if (integration[x] == 0) {
+        cols.push_back(x-MARGIN_X >= 0 ? x-MARGIN_X : 0);
+        peak = -1;
+      }
+    }
+  }
+  reverse(cols.begin(), cols.end());
+  return cols;
 }
 
 CImg<double> cut(const CImg<double> &img, int y0, int y1, int x0, int x1) {}
+
+void resize_origin(CImg<double> &img) {
+  img = img.resize_halfXY();
+}
 
 void resize_28by28(CImg<double> &img) {}
 
@@ -326,22 +362,24 @@ int main(int argc, char *argv[]) {
   char origin_path[50];
   char a4_path[50];
   char a4_bi_path[50];
-  CImg<double> origin, a4, a4_bi;
+  char a4_seg_path[50];
+  CImg<double> origin, a4, a4_bi, a4_seg;
   clock_t time0, time1, time2, time3, time4;
 
   sprintf(origin_path, "data/test/%s", filename);
   sprintf(a4_path, "data/test/a4_%s", filename);
   sprintf(a4_bi_path, "data/test/a4_bi_%s", filename);
+  sprintf(a4_seg_path, "data/test/a4_seg_%s", filename);
 
   time0 = clock();
 
   // 提取 A4
   origin.assign(origin_path);
-  origin = origin.resize_halfXY();
+  resize_origin(origin);
   a4 = detect(origin);
   a4.save(a4_path);
   time1 = clock();
-  printf("detection: %fms\n", (double)(time1-time1)/1000);
+  printf("detection:\t%fms\n", (double)(time1-time0)/1000);
 
   // 二值化
   a4_bi.assign(a4._width, a4._height, 1, 1, 0);
@@ -349,24 +387,28 @@ int main(int argc, char *argv[]) {
     a4_bi(x, y) = (a4(x, y, 0, 0) > THRESHOLD2 && a4(x, y, 0, 0) > THRESHOLD2 && a4(x, y, 0, 0) > THRESHOLD2) ? 255 : 0;
   }
   clear_edges(a4_bi);
+  a4_bi.save(a4_bi_path);
   time2 = clock();
-  printf("binarization: %fms\n", (double)(time2-time1)/1000);
+  printf("binarization:\t%fms\n", (double)(time2-time1)/1000);
 
   // 行分割
   const double black[] = { 0, 0, 0 };
-  vector<int> rows = divide_rows(a4_bi);
+  a4_seg.assign(a4_bi);
+  vector<int> rows = divide_rows(a4_seg);
   for (int i = 0; i < rows.size(); i += 2) {
-    // if (rows[i]-rows[i+1] < THRESHOLD5) continue;
-    vector<int> cols = divide_cols(a4_bi, rows[i], rows[i+1]);
+    // if (rows[i+1]-rows[i] < THRESHOLD5) continue;
+    vector<int> cols = divide_cols(a4_seg, rows[i], rows[i+1]);
     for (int j = 0; j < cols.size(); j += 2) {
-      a4_bi.draw_line(cols[j], rows[i], cols[j+1], rows[i], black);
-      a4_bi.draw_line(cols[j], rows[i+1], cols[j+1], rows[i+1], black);
-      a4_bi.draw_line(cols[j], rows[i], cols[j], rows[i+1], black);
-      a4_bi.draw_line(cols[j+1], rows[i], cols[j+1], rows[i+1], black);
-      // CImg<double> digit = cut(a4_bi, rows[i], rows[i+1], cols[j], cols[j+1]);
+      a4_seg.draw_line(cols[j], rows[i], cols[j+1], rows[i], black);
+      a4_seg.draw_line(cols[j], rows[i+1], cols[j+1], rows[i+1], black);
+      a4_seg.draw_line(cols[j], rows[i], cols[j], rows[i+1], black);
+      a4_seg.draw_line(cols[j+1], rows[i], cols[j+1], rows[i+1], black);
+      // CImg<double> digit = cut(a4_seg, rows[i], rows[i+1], cols[j], cols[j+1]);
     }
   }
-  a4_bi.save(a4_bi_path);
+  a4_seg.save(a4_seg_path);
+  time3 = clock();
+  printf("segmentation:\t%fms\n", (double)(time3-time2)/1000);
 
   return 0;
 }
