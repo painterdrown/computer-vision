@@ -16,11 +16,11 @@ using namespace Eigen;
 #define BLUR        3
 #define SLOPE_FLAG  1
 #define THRESHOLD1  800
-#define THRESHOLD2  160
+#define THRESHOLD2  150
 #define THRESHOLD3  5
 #define THRESHOLD4  80
 #define THRESHOLD5  28
-#define THRESHOLD6  0
+#define THRESHOLD6  1
 #define THRESHOLD7  10
 #define MARGIN_Y    10
 #define MARGIN_X    0
@@ -386,10 +386,10 @@ void resize_origin(CImg<double> &img) {
   img = img.resize_halfXY();
 }
 
-void resize_28by28(CImg<double> &img) {
+void resize_square(CImg<double> &img) {
   CImg<double> new_img;
   int side = max(img._width, img._height);
-  side += side/3;
+  side += side/2;
   int margin_x = (side-img._width) / 2;
   int margin_y = (side-img._height) / 2;
   new_img.assign(side, side, 1, 1, 0);
@@ -398,8 +398,7 @@ void resize_28by28(CImg<double> &img) {
       new_img(x+margin_x, y+margin_y) = 255;
     }
   }
-  img = new_img;
-  new_img.resize(28, 28);
+  img = new_img;  // resize(28, 28);
 }
 
 int main(int argc, char *argv[]) {
@@ -453,7 +452,7 @@ int main(int argc, char *argv[]) {
       seg.draw_line(cols[j+1], rows[i], cols[j+1], rows[i+1], black);
       crop = get_crop(bi, cols[j], rows[i], cols[j+1], rows[i+1]);
       remove_margin(crop);
-      resize_28by28(crop);
+      resize_square(crop);
       sprintf(crop_path, "data/a4_digits/%s/%d_%d.jpg", filename, row_count, col_count);
       crop.save(crop_path);
       ++col_count;
