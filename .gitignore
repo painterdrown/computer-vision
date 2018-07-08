@@ -1,9 +1,10 @@
-.vscode/
+.vscode
 
-ex5/img/dataset/
+ex5/img/dataset
 
-final-project/data/a4/
-final-project/data/a4_bi/
-final-project/data/a4_seg/
-final-project/data/a4_digits/
+final-project/data/a4
+final-project/data/a4_bi
+final-project/data/a4_seg
+final-project/data/a4_digits
+final-project/data/mnistasjpg
 final-project/.idea
