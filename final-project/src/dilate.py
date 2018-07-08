@@ -6,16 +6,15 @@ if __name__ == '__main__':
   filename = sys.argv[1]
   workdir = os.getcwd()
   a4_digits = os.path.join(workdir, 'data', 'a4_digits', filename)
-  a4_digits_dilation = os.path.join(workdir, 'data', 'a4_digits', filename+'_dilation')
+  a4_digits_dilation = os.path.join(workdir, 'data', 'a4_digits', filename + '_dilation')
   a4_digits_resized = os.path.join(workdir, 'data', 'a4_digits', filename + '_resized')
   os.mkdir(a4_digits_dilation)
   os.mkdir(a4_digits_resized)
   images = os.listdir(a4_digits)
-  kernel = np.ones((3,3),np.uint8)
+  kernel = np.ones((3, 3), np.uint8)
   for image_name in images:
     if not image_name.endswith('.jpg'):
       continue
-    print "resize:", image_name
     image_path = os.path.join(a4_digits, image_name)
     image = cv2.imread(image_path, 0)
     # dilation

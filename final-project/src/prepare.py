@@ -10,15 +10,15 @@ if __name__ == '__main__':
   a4_digits = os.path.join(workdir, 'data', 'a4_digits')
   a4_digits_one = os.path.join(workdir, 'data', 'a4_digits', filename)
 
-  if (not os.path.exists(a4)):
+  if not os.path.exists(a4):
     os.mkdir(a4)
-  if (not os.path.exists(a4_bi)):
+  if not os.path.exists(a4_bi):
     os.mkdir(a4_bi)
-  if (not os.path.exists(a4_seg)):
+  if not os.path.exists(a4_seg):
     os.mkdir(a4_seg)
-  if (not os.path.exists(a4_digits)):
+  if not os.path.exists(a4_digits):
     os.mkdir(a4_digits)
-  if (os.path.exists(a4_digits_one)):
+  if os.path.exists(a4_digits_one):
     os.rmdir(a4_digits_one)
   else:
     os.mkdir(a4_digits_one)
