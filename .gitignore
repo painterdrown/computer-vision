@@ -2,9 +2,11 @@
 
 ex5/img/dataset
 
+final-project/.idea
 final-project/data/a4
 final-project/data/a4_bi
 final-project/data/a4_seg
 final-project/data/a4_digits
 final-project/data/mnistasjpg
-final-project/.idea
+final-project/models
+final-project/**/*.pyc

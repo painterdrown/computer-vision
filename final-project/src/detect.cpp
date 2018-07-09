@@ -453,7 +453,7 @@ int main(int argc, char *argv[]) {
       crop = get_crop(bi, cols[j], rows[i], cols[j+1], rows[i+1]);
       remove_margin(crop);
       resize_square(crop);
-      sprintf(crop_path, "data/a4_digits/%s/%d_%d.jpg", filename, row_count, col_count);
+      sprintf(crop_path, "data/a4_digits/%s/%02d_%02d.jpg", filename, row_count, col_count);
       crop.save(crop_path);
       ++col_count;
     }
