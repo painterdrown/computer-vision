@@ -15,7 +15,7 @@ using namespace Eigen;
 #define DIFF        90
 #define BLUR        3
 #define SLOPE_FLAG  1
-#define THRESHOLD1  800
+#define THRESHOLD1  200
 #define THRESHOLD2  150
 #define THRESHOLD3  5
 #define THRESHOLD4  80
@@ -238,6 +238,12 @@ CImg<double> detect(const CImg<double> &orgn_img) {
   int y2 = dot2->y;
   int x3 = dot3->x;
   int y3 = dot3->y;
+
+  printf("corner 1: (%d, %d)\n", x0*2, y0*2);
+  printf("corner 2: (%d, %d)\n", x1*2, y1*2);
+  printf("corner 3: (%d, %d)\n", x2*2, y2*2);
+  printf("corner 4: (%d, %d)\n", x3*2, y3*2);
+
   int m = (sqrt(pow(x1 - x0, 2) + pow(y1 - y0, 2)) + sqrt(pow(x3 - x2, 2) + pow(y3 - y2, 2))) / 2;
   int n = m * 297 / 210;
 
@@ -261,26 +267,9 @@ CImg<double> detect(const CImg<double> &orgn_img) {
   return rslt_img;
 }
 
-void clear_point(CImg<double> &img, int x, int y) {
-  if (img(x, y) != 0) return;
-  else img(x, y) = 255;
-  if (x-1 >= 0) clear_point(img, x-1, y);
-  if (x+1 < img._width) clear_point(img, x+1, y);
-  if (y-1 >= 0) clear_point(img, x, y-1);
-  if (y+1 < img._height) clear_point(img, x, y+1);
-}
-
 void clear_edges(CImg<double> &img) {
-  // 上边、下边
-  for (int x = 0; x < img._width; ++x) {
-    clear_point(img, x, 0);
-    clear_point(img, x, img._height-1);
-  }
-  // 左边、右边
-  for (int y = 0; y < img._height; ++y) {
-    clear_point(img, 0, y);
-    clear_point(img, img._width-1, y);
-  }
+  int crop_margin = img._width / 50;
+  img.crop(crop_margin, crop_margin, img._width-crop_margin, img._height-crop_margin, false);
 }
 
 vector<int> divide_rows(const CImg<double> &img) {
@@ -389,7 +378,7 @@ void resize_origin(CImg<double> &img) {
 void resize_square(CImg<double> &img) {
   CImg<double> new_img;
   int side = max(img._width, img._height);
-  side += side/2;  // margin
+  side += side/2;
   int margin_x = (side-img._width) / 2;
   int margin_y = (side-img._height) / 2;
   new_img.assign(side, side, 1, 1, 0);
@@ -399,6 +388,15 @@ void resize_square(CImg<double> &img) {
     }
   }
   img = new_img;  // resize(28, 28);
+}
+
+CImg<double> binarize(CImg<double> &img) {
+  CImg<double> bi;
+  bi.assign(img._width, img._height, 1, 1, 0);
+  cimg_forXY(img, x, y) {
+    bi(x, y) = (img(x, y, 0, 0) > 150 || img(x, y, 0, 1) > 150 || img(x, y, 0, 2) > 150) ? 255 : 0;
+  }
+  return bi;
 }
 
 int main(int argc, char *argv[]) {
@@ -422,19 +420,16 @@ int main(int argc, char *argv[]) {
   origin.assign(origin_path);
   resize_origin(origin);
   a4 = detect(origin);
+  clear_edges(a4);
   a4.save(a4_path);
   time1 = clock();
   printf("detection:\t%fms\n", (double)(time1-time0)/1000);
 
   // 二值化
-  bi.assign(a4._width, a4._height, 1, 1, 0);
-  cimg_forXY(a4, x, y) {
-    bi(x, y) = (a4(x, y, 0, 0) > THRESHOLD2 && a4(x, y, 0, 0) > THRESHOLD2 && a4(x, y, 0, 0) > THRESHOLD2) ? 255 : 0;
-  }
-  clear_edges(bi);
+  bi = binarize(a4);
   bi.save(bi_path);
   time2 = clock();
-  printf("binarization:\t%fms\n", (double)(time2-time1)/1000);
+  // printf("binarization:\t%fms\n", (double)(time2-time1)/1000);
 
   // 行分割
   const double black[] = { 0, 0, 0 };
@@ -453,7 +448,7 @@ int main(int argc, char *argv[]) {
       crop = get_crop(bi, cols[j], rows[i], cols[j+1], rows[i+1]);
       remove_margin(crop);
       resize_square(crop);
-      sprintf(crop_path, "data/a4_digits/%s/%03d_%03d.jpg", filename, row_count, col_count);
+      sprintf(crop_path, "data/a4_digits/%s/%02d_%02d.jpg", filename, row_count, col_count);
       crop.save(crop_path);
       ++col_count;
     }

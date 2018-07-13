@@ -27,7 +27,7 @@ def train(train_path):
   print get_time(), 'trained model:', clf
 
   # save trained models
-  clf_path = os.path.join(workdir, 'models', 'svm_ptddigits.pkl')
+  clf_path = os.path.join(workdir, 'models', 'svm_mnist.pkl')
   clf_file = open(clf_path, 'wb')
   pickle.dump(clf, clf_file)
   print get_time(), 'trained model is saved at:', clf_path
@@ -36,5 +36,5 @@ def train(train_path):
 
 if __name__ == '__main__':
   workdir = os.getcwd()
-  ptddigits_path = os.path.join(workdir, 'data', 'ptddigits')
-  train(ptddigits_path)
+  mnist_path = os.path.join(workdir, 'data', 'mnistasjpg', 'trainingSet')
+  train(mnist_path)

@@ -1,12 +1,69 @@
+# Final：数字字符切割和识别
 
-g++ -o bin/detect src/detect.cpp -O2 -lm -lpthread -I /usr/X11R6/include -L /usr/X11R6/lib -lX11
+> 郑钊  计算机应用  15331424
 
-1. 原图 /data/origin/*.jpg
+[TOC]
 
 ## 1. A4 纸检测 & 数字切割
 
-1. 统一输入图像的大小
-2. 连写不能分开的解决方法
+### 1.1. A4 纸检测
+
+这里直接使用之前作业的算法。
+
+1. 编译
+
+```sh
+g++ -o bin/detect src/detect.cpp -O2 -lm -lpthread -I /usr/X11R6/include -L /usr/X11R6/lib -lX11
+```
+
+2. 运行
+
+```
+bin/detect 1
+
+corner 1: (232, 800)
+corner 2: (2238, 694)
+corner 3: (382, 3690)
+corner 4: (2436, 3510)
+detection:      1016.268000ms
+segmentation:   123.496000ms
+```
+
+```sh
+bin/detect 2
+
+corner 1: (328, 36)
+corner 2: (2298, 36)
+corner 3: (278, 2904)
+corner 4: (2348, 2904)
+detection:      750.023000ms
+segmentation:   62.731000ms
+```
+
+<img src="images/a4/1.jpg" height="400px"><img src="images/a4/2.jpg" height="400px">
+
+<img src="images/a4_bi/1.jpg" height="400px"><img src="images/a4_bi/2.jpg" height="400px">
+
+### 1.2. 数字切割
+
+数字切割这里主要思路是：**先进行行分割，再进行列分割**。
+
+行分割：目的是为了分割出 A4 张上的每一行数字。具体做法：
+
+1. 统计 A4 纸在 y 轴方向上的密度。
+2. 通过一个阈值（算法里取 80）来找出所有的峰，每一个峰则对应一行数字。
+
+列分割：目的是为了分割出每一行数字中的每一列的数字。具体做法与行分割思想相似。
+
+<img src="images/a4_seg/1.jpg" height="400px"><img src="images/a4_seg/2.jpg" height="400px">
+
+<img src="images/seg_1.png" height="400px"><img src="images/seg_2.png" height="400px">
+
+在做列分割的时候，我碰到了下面这个问题：
+
+> 连写的两个数字分不开。
+
+这里的解决思路是，在做列分割的时候，控制好相邻峰之间的间隔，如果间隔太近说明很有可能是两个连写的数字，这个时候不能看成是一个峰，而要分成两个。
 
 ## 2. 在 MNIST 上训练和测试
 
@@ -47,12 +104,21 @@ python src/svm_train.py
 
 ```sh
 python src/svm_test.py 1
+
+[2018-07-13 11:12:41] load the svm model via pickle
+[2018-07-13 11:12:44] begin testing
+[2018-07-13 11:12:46] result: ['14514511', '15555355079', '952521111105110055', '19134511', '15156211004', '4553115780500025', '55534111', '15156513009', '43252111180628004']
 ```
 
 ```sh
+python src/svm_test.py 2
+
+[2018-07-13 11:12:49] load the svm model via pickle
+[2018-07-13 11:12:52] begin testing
+[2018-07-13 11:12:52] result: ['15151427', '15521221510', '745121111105090000']
 ```
 
-## 3. 制作自己的数据集
+## 3. 在自制数据集 ptddigits 上训练和测试
 
 观察 MNIST 中的数字图片，发现外国人的数字手写习惯与我们相差比较大，于是我打算尝试制作自己的手写数字训练集，看能否提高正确率。
 
