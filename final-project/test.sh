@@ -3,6 +3,7 @@ image=$1
 rm -rf data/a4_digits/${image}
 rm -rf data/a4_digits/${image}_dilation
 rm -rf data/a4_digits/${image}_resized
+
 mkdir data/a4_digits/${image}
 
 echo '======================'
