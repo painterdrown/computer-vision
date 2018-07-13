@@ -389,7 +389,7 @@ void resize_origin(CImg<double> &img) {
 void resize_square(CImg<double> &img) {
   CImg<double> new_img;
   int side = max(img._width, img._height);
-  side += side/2;
+  side += side/2;  // margin
   int margin_x = (side-img._width) / 2;
   int margin_y = (side-img._height) / 2;
   new_img.assign(side, side, 1, 1, 0);
@@ -453,7 +453,7 @@ int main(int argc, char *argv[]) {
       crop = get_crop(bi, cols[j], rows[i], cols[j+1], rows[i+1]);
       remove_margin(crop);
       resize_square(crop);
-      sprintf(crop_path, "data/a4_digits/%s/%02d_%02d.jpg", filename, row_count, col_count);
+      sprintf(crop_path, "data/a4_digits/%s/%03d_%03d.jpg", filename, row_count, col_count);
       crop.save(crop_path);
       ++col_count;
     }

@@ -31,7 +31,7 @@ def test(clf, images_path):
 if __name__ == '__main__':
   cwd = os.getcwd()
   print get_time(), 'load the svm model via pickle'
-  clf_path = os.path.join(cwd, 'models', 'svm.pkl')
+  clf_path = os.path.join(cwd, 'models', 'svm_ptddigits.pkl')
   clf_file = open(clf_path, 'rb')
   clf = pickle.load(clf_file)
 

@@ -4,13 +4,13 @@ import pickle
 from sklearn import svm
 from svm_util import get_time, image_to_1d
 
-def train(mnist_train_path):
+def train(train_path):
   # read train data
   print get_time(), 'read train data'
   X = []
   y = []
   for i in range(0, 10):
-    digits_path = os.path.join(mnist_train_path, str(i))
+    digits_path = os.path.join(train_path, str(i))
     images_names = os.listdir(digits_path)
     for image_name in images_names:
       if not image_name.endswith('.jpg'):
@@ -27,7 +27,7 @@ def train(mnist_train_path):
   print get_time(), 'trained model:', clf
 
   # save trained models
-  clf_path = os.path.join(workdir, 'models', 'svm.pkl')
+  clf_path = os.path.join(workdir, 'models', 'svm_ptddigits.pkl')
   clf_file = open(clf_path, 'wb')
   pickle.dump(clf, clf_file)
   print get_time(), 'trained model is saved at:', clf_path
@@ -36,6 +36,5 @@ def train(mnist_train_path):
 
 if __name__ == '__main__':
   workdir = os.getcwd()
-  mnist_path = os.path.join(workdir, 'data', 'mnistasjpg')
-  mnist_train_path = os.path.join(mnist_path, 'trainingSet')
-  train(mnist_train_path)
+  ptddigits_path = os.path.join(workdir, 'data', 'ptddigits')
+  train(ptddigits_path)
